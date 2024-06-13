@@ -1,132 +1,151 @@
-#include <iostream> // Підключення бібліотеки для роботи з вхідними та вихідними потоками
-using namespace std; // Використання простору імен std
+#include <iostream> // Including the library for input and output streams
+#include <fstream> // Including the library for file streams
+#include <string> // Including the string library for using to_string
+#include <nlohmann/json.hpp> // Including the JSON library
 
-// Ініціалізація ігрової дошки
+using namespace std;
+using json = nlohmann::json; // Using the nlohmann JSON namespace
+
+// Initializing the game board
 char board[3][3] = { {'1', '2', '3'},
                      {'4', '5', '6'},
                      {'7', '8', '9'} };
-char current_marker; // Змінна для зберігання маркера поточного гравця
-int current_player; // Змінна для зберігання номера поточного гравця
+char current_marker; // Variable to store the marker of the current player
+int current_player; // Variable to store the number of the current player
 
-// Функція для виведення ігрової дошки
 void drawBoard() {
-    cout << "-------------\n"; // Верхня межа дошки
-    for (int i = 0; i < 3; i++) { // Проходження по рядках дошки
-        cout << "| "; // Ліва межа рядка
-        for (int j = 0; j < 3; j++) { // Проходження по стовпцях дошки
-            cout << board[i][j] << " | "; // Виведення значення комірки і правої межі комірки
+    cout << "-------------\n"; // Top border of the board
+    for (int i = 0; i < 3; i++) { // Iterating through the rows of the board
+        cout << "| "; // Left border of the row
+        for (int j = 0; j < 3; j++) { // Iterating through the columns of the board
+            cout << board[i][j] << " | "; // Printing the cell value and the right border of the cell
         }
-        cout << "\n-------------\n"; // Нижня межа рядка
+        cout << "\n-------------\n"; // Bottom border of the row
     }
 }
 
-// Функція для розміщення маркера на дошці
+// Function to place the marker on the board
 bool placeMarker(int slot) {
-    int row = (slot - 1) / 3; // Обчислення рядка на основі введеного слоту
-    int col = (slot - 1) % 3; // Обчислення стовпця на основі введеного слоту
+    int row = (slot - 1) / 3; // Calculating the row based on the entered slot
+    int col = (slot - 1) % 3; // Calculating the column based on the entered slot
 
-    // Перевірка, чи комірка не зайнята
+    // Checking if the cell is not occupied
     if (board[row][col] != 'X' && board[row][col] != '0') {
-        board[row][col] = current_marker; // Розміщення маркера на дошці
-        return true; // Успішне розміщення маркера
+        board[row][col] = current_marker; // Placing the marker on the board
+        return true; // Successfully placed the marker
     }
     else {
-        return false; // Комірка зайнята, розміщення не відбулось
+        return false; // Cell is occupied
     }
 }
 
-// Функція для визначення переможця
+// Function to determine the winner
 int winner() {
-    // Перевірка рядків на виграшну комбінацію
+    // Checking rows for a winning combination
     for (int i = 0; i < 3; i++) {
         if (board[i][0] == board[i][1] && board[i][1] == board[i][2]) {
-            return current_player; // Поточний гравець виграв
+            return current_player; // Current player wins
         }
     }
-    // Перевірка стовпців на виграшну комбінацію
+    // Checking columns for a winning combination
     for (int i = 0; i < 3; i++) {
         if (board[0][i] == board[1][i] && board[1][i] == board[2][i]) {
-            return current_player; // Поточний гравець виграв
+            return current_player; // Current player wins
         }
     }
-    // Перевірка діагоналей на виграшну комбінацію
+    // Checking diagonals for a winning combination
     if (board[0][0] == board[1][1] && board[1][1] == board[2][2]) {
-        return current_player; // Поточний гравець виграв
+        return current_player; // Current player wins
     }
     if (board[0][2] == board[1][1] && board[1][1] == board[2][0]) {
-        return current_player; // Поточний гравець виграв
+        return current_player; // Current player wins
     }
 
-    return 0; // Немає переможця
+    return 0; // No winner
 }
 
-// Функція для зміни поточного гравця та його маркера
+// Function to swap the current player and their marker
 void swapPlayerAndMarker() {
-    current_marker = (current_marker == 'X') ? '0' : 'X'; // Зміна маркера
-    current_player = (current_player == 1) ? 2 : 1; // Зміна номера гравця
+    current_marker = (current_marker == 'X') ? '0' : 'X'; // Switching the marker
+    current_player = (current_player == 1) ? 2 : 1; // Switching the player number
 }
 
-// Основна функція гри
+// Function to save the game result to a CSV file
+void saveGameResult(int player_won) {
+    ofstream file("game_results.csv", ios::app); // Opening the CSV file in append mode
+    if (file.is_open()) {
+        file << "Player " << (player_won ? to_string(player_won) : "None") << ","
+            << (player_won ? "Win" : "Tie") << endl;
+        file.close(); // Closing the file
+    }
+    else {
+        cout << "Unable to open file for writing results.\n";
+    }
+}
+
+// Function to save the game state to a JSON file
+void saveGameState() {
+    json game_state; // Creating a JSON object
+    game_state["current_player"] = current_player;
+    game_state["current_marker"] = current_marker;
+
+    // Saving the board state
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            game_state["board"][i][j] = board[i][j];
+        }
+    }
+
+    ofstream file("game_state.json"); // Opening the JSON file for writing
+    if (file.is_open()) {
+        file << game_state.dump(4); // Dumping the JSON object to the file with 4-space indentation
+        file.close(); // Closing the file
+    }
+    else {
+        cout << "Unable to open file for writing game state.\n";
+    }
+}
+
+// Function to run the game
 void game() {
-    char marker_p1; // Змінна для маркера першого гравця
-    while (true) { // Цикл для забезпечення правильного вибору маркера
-        cout << "Player 1, choose your marker (X or 0): "; // Запит маркера
-        cin >> marker_p1; // Зчитування маркера
+    char marker_p1; // Variable to store the marker of the first player
+    do {
+        cout << "Player 1, choose your marker (X or 0): "; // Prompting the first player to choose their marker
+        cin >> marker_p1; // Reading the marker
+    } while (marker_p1 != 'X' && marker_p1 != '0'); // Ensuring the marker is either 'X' or '0'
 
-        if (marker_p1 == 'X' || marker_p1 == '0') { // Перевірка правильності маркера
-            break; // Вихід з циклу при правильному маркері
+    current_player = 1; // Setting the first player
+    current_marker = marker_p1; // Setting the marker of the first player
+
+    drawBoard(); // Displaying the initial board
+    int player_won = 0; // Variable to store the game result (0 means no winner yet)
+
+    for (int i = 0; i < 9 && player_won == 0; i++) { // Loop for making moves, max 9 moves
+        int slot; // Variable to store the chosen slot
+        cout << "Player " << current_player << "'s turn. Enter your slot: "; // Prompting the current player to enter a slot
+        cin >> slot; // Reading the chosen slot
+
+        // Checking if the slot is valid and not occupied
+        if (slot < 1 || slot > 9 || !placeMarker(slot)) {
+            cout << "Invalid slot! Try again.\n"; // Invalid slot message
+            i--; // Decrease i to repeat the iteration for the same player
+            continue; // Skip the rest of the loop and continue with the next iteration
         }
-        else {
-            cout << "Invalid marker! Choose either X or 0.\n"; // Повідомлення про неправильний маркер
-        }
+
+        drawBoard(); // Displaying the updated board
+        saveGameState(); // Saving the game state after each move
+        player_won = winner(); // Checking for a winner
+
+        if (player_won == 0) swapPlayerAndMarker(); // If no winner, switch player and marker
     }
 
-    current_player = 1; // Встановлення першого гравця
-    current_marker = marker_p1; // Встановлення маркера першого гравця
+    // Displaying the result of the game
+    cout << (player_won ? "Player " + to_string(player_won) + " wins! Congratulations!\n" : "It's a tie!\n");
 
-    drawBoard(); // Виведення початкової дошки
-
-    int player_won = 0; // Змінна для зберігання результату гри
-
-    for (int i = 0; i < 9; i++) { // Цикл для проведення ходів
-        cout << "It's player " << current_player << "'s turn. Enter your slot: "; // Повідомлення про хід гравця
-        int slot; // Змінна для зберігання вибраного слоту
-        cin >> slot; // Зчитування вибраного слоту
-
-        if (slot < 1 || slot > 9) { // Перевірка правильності слоту
-            cout << "That slot is invalid! Try another slot!\n"; // Повідомлення про неправильний слот
-            i--; // Зменшення лічильника для повторення ходу
-            continue; // Пропуск ітерації
-        }
-
-        if (!placeMarker(slot)) { // Перевірка, чи слот зайнятий
-            cout << "That slot is occupied! Try another slot!\n"; // Повідомлення про зайнятий слот
-            i--; // Зменшення лічильника для повторення ходу
-            continue; // Пропуск ітерації
-        }
-
-        drawBoard(); // Виведення оновленої дошки
-
-        player_won = winner(); // Перевірка наявності переможця
-
-        if (player_won == 1) { // Перемога першого гравця
-            cout << "Player 1 wins! Congratulations!\n"; // Повідомлення про перемогу
-            break; // Вихід з циклу
-        }
-        if (player_won == 2) { // Перемога другого гравця
-            cout << "Player 2 wins! Congratulations!\n"; // Повідомлення про перемогу
-            break; // Вихід з циклу
-        }
-
-        swapPlayerAndMarker(); // Зміна гравця і маркера
-    }
-
-    if (player_won == 0) { // Нічия
-        cout << "It's a tie!\n"; // Повідомлення про нічию
-    }
+    saveGameResult(player_won); // Saving the game result to a CSV file
 }
 
 int main() {
-    game(); // Виклик функції гри
-    return 0; // Завершення програми
+    game(); // Calling the game function
+    return 0; // Ending the program
 }
