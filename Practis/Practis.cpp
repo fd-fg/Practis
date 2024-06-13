@@ -2,6 +2,7 @@
 #include <fstream> // Including the library for file streams
 #include <string> // Including the string library for using to_string
 #include <nlohmann/json.hpp> // Including the JSON library
+#include <vector> // Including the vector library for storing moves
 
 using namespace std;
 using json = nlohmann::json; // Using the nlohmann JSON namespace
@@ -12,6 +13,11 @@ char board[3][3] = { {'1', '2', '3'},
                      {'7', '8', '9'} };
 char current_marker; // Variable to store the marker of the current player
 int current_player; // Variable to store the number of the current player
+
+int player1_wins = 0; // Counter for Player 1 wins
+int player2_wins = 0; // Counter for Player 2 wins
+int ties = 0; // Counter for ties
+vector<string> game_logs; // Vector to store the game logs
 
 void drawBoard() {
     cout << "-------------\n"; // Top border of the board
@@ -71,30 +77,26 @@ void swapPlayerAndMarker() {
 }
 
 // Function to save the game result to a CSV file
-void saveGameResult(int player_won) {
-    ofstream file("game_results.csv", ios::app); // Opening the CSV file in append mode
-    if (file.is_open()) {
-        file << "Player " << (player_won ? to_string(player_won) : "None") << ","
-            << (player_won ? "Win" : "Tie") << endl;
-        file.close(); // Closing the file
-    }
-    else {
-        cout << "Unable to open file for writing results.\n";
-    }
-}
+//void saveGameResult(int player_won) {
+//    ofstream file("game_results.csv", ios::app); // Opening the CSV file in append mode
+//    if (file.is_open()) {
+//        file << "Player " << (player_won ? to_string(player_won) : "None") << ","
+//            << (player_won ? "Win" : "Tie") << endl;
+//        file.close(); // Closing the file
+//    }
+//    else {
+//        cout << "Unable to open file for writing results.\n";
+//    }
+//}
 
 // Function to save the game state to a JSON file
 void saveGameState() {
     json game_state; // Creating a JSON object
     game_state["current_player"] = current_player;
     game_state["current_marker"] = current_marker;
-
-    // Saving the board state
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            game_state["board"][i][j] = board[i][j];
-        }
-    }
+    game_state["player1_wins"] = player1_wins;
+    game_state["player2_wins"] = player2_wins;
+    game_state["ties"] = ties;
 
     ofstream file("game_state.json"); // Opening the JSON file for writing
     if (file.is_open()) {
@@ -106,8 +108,44 @@ void saveGameState() {
     }
 }
 
+// Function to load the game state from a JSON file
+void loadGameState() {
+    ifstream file("game_state.json"); // Opening the JSON file for reading
+    if (file.is_open()) {
+        json game_state;
+        file >> game_state; // Reading the JSON object from the file
+
+        current_player = game_state.value("current_player", 1); // Loading the current player, default is 1
+        current_marker = game_state.value("current_marker", 'X'); // Loading the current marker, default is 'X'
+        player1_wins = game_state.value("player1_wins", 0);
+        player2_wins = game_state.value("player2_wins", 0);
+        ties = game_state.value("ties", 0);
+
+        file.close(); // Closing the file
+    }
+    else {
+        cout << "No previous game state found. Starting a new game.\n";
+    }
+}
+
+// Function to save the game logs to a CSV file
+void saveGameLogs() {
+    ofstream file("game_logs.csv", ios::app); // Opening the CSV file in append mode
+    if (file.is_open()) {
+        for (const string& log : game_logs) {
+            file << log << endl; // Writing each log entry to the file
+        }
+        file.close(); // Closing the file
+    }
+    else {
+        cout << "Unable to open file for writing game logs.\n";
+    }
+}
+
 // Function to run the game
 void game() {
+    loadGameState(); // Load the game state from the JSON file
+
     char marker_p1; // Variable to store the marker of the first player
     do {
         cout << "Player 1, choose your marker (X or 0): "; // Prompting the first player to choose their marker
@@ -134,15 +172,32 @@ void game() {
 
         drawBoard(); // Displaying the updated board
         saveGameState(); // Saving the game state after each move
+        game_logs.push_back("Player " + to_string(current_player) + " placed " + current_marker + " in slot " + to_string(slot)); // Logging the move
         player_won = winner(); // Checking for a winner
 
         if (player_won == 0) swapPlayerAndMarker(); // If no winner, switch player and marker
     }
 
     // Displaying the result of the game
-    cout << (player_won ? "Player " + to_string(player_won) + " wins! Congratulations!\n" : "It's a tie!\n");
+    if (player_won) {
+        cout << "Player " + to_string(player_won) + " wins! Congratulations!\n";
+        game_logs.push_back("Player " + to_string(player_won) + " wins!");
+        if (player_won == 1) {
+            player1_wins++; // Incrementing Player 1's win counter
+        }
+        else {
+            player2_wins++; // Incrementing Player 2's win counter
+        }
+    }
+    else {
+        cout << "It's a tie!\n";
+        game_logs.push_back("It's a tie!");
+        ties++; // Incrementing the tie counter
+    }
 
-    saveGameResult(player_won); // Saving the game result to a CSV file
+    //saveGameResult(player_won); // Saving the game result to a CSV file
+    saveGameLogs(); // Saving the game logs to a CSV file
+    saveGameState(); // Saving the final game state including counters to JSON
 }
 
 int main() {
