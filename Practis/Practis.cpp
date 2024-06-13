@@ -76,19 +76,6 @@ void swapPlayerAndMarker() {
     current_player = (current_player == 1) ? 2 : 1; // Switching the player number
 }
 
-// Function to save the game result to a CSV file
-//void saveGameResult(int player_won) {
-//    ofstream file("game_results.csv", ios::app); // Opening the CSV file in append mode
-//    if (file.is_open()) {
-//        file << "Player " << (player_won ? to_string(player_won) : "None") << ","
-//            << (player_won ? "Win" : "Tie") << endl;
-//        file.close(); // Closing the file
-//    }
-//    else {
-//        cout << "Unable to open file for writing results.\n";
-//    }
-//}
-
 // Function to save the game state to a JSON file
 void saveGameState() {
     json game_state; // Creating a JSON object
