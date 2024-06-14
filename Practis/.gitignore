@@ -118,12 +118,20 @@ ipch/
 *.cachefile
 *.VC.db
 *.VC.VC.opendb
+*.bazel
+*.MIT
+*.build
+*.vcxproj
 
 # Visual Studio profiler
 *.psess
 *.vsp
 *.vspx
 *.sap
+*.bazel
+*.MIT
+*.build
+*.vcxproj
 
 # Visual Studio Trace Files
 *.e2e
